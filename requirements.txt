@@ -10,7 +10,7 @@ google-auth-oauthlib
 pypdf
 fitz
 pandas
-PyMuPDF
+PyMuPDF==1.16.14
 pdfplumber 
 requests  
 pyarrow
