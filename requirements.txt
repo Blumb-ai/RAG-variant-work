@@ -10,7 +10,6 @@ google-auth-oauthlib
 pypdf
 fitz
 pandas
-build-essential
 libmupdf-dev
 mupdf
 PyMuPDF
