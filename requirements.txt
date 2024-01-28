@@ -13,7 +13,7 @@ pandas
 build-essential
 libmupdf-dev
 mupdf
-PyMuPDF==1.16
+PyMuPDF
 pdfplumber 
 requests  
 pyarrow
