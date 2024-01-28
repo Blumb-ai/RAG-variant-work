@@ -10,7 +10,7 @@ google-auth-oauthlib
 pypdf
 fitz
 pandas
-libmupdf-dev
+libmupdf
 mupdf
 PyMuPDF
 pdfplumber 
