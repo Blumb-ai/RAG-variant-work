@@ -1,3 +1,5 @@
+Flask
+flasgger
 langchain 
 langchain-community 
 langchainhub 
@@ -9,8 +11,6 @@ google-auth-httplib2
 google-auth-oauthlib      
 pypdf
 pandas
-libmupdf
-mupdf
 PyMuPDF
 pdfplumber 
 requests  
@@ -22,5 +22,4 @@ scikit-learn
 tenacity
 openai
 numpy
-Flask
-flasgger
+
