@@ -255,7 +255,13 @@ def classify_downloaded_documents_route():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+host = os.getenv('HOST', '0.0.0.0')  # Usa '0.0.0.0' si 'HOST' no está configurado
+port = int(os.getenv('PORT', 80))  # Usa el puerto 80 si 'PORT' no está configurado
+
 if __name__ == "__main__":
-    app.run(host=os.environ['HOST'], port=os.environ['PORT'], debug=True)  # Ejecutar la aplicación Flask
+    app.run(host=host, port=port, debug=True)
+
+#    app.run(host=os.environ['HOST'], port=os.environ['PORT'], debug=True)  # Ejecutar la aplicación Flask
 
 
