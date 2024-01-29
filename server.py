@@ -140,7 +140,7 @@ swagger = Swagger(app)
 
 @app.route("/")
 def home():
-    return render_template("bot.html") # Renders the webpage
+    return render_template('bot.html') # Renders the webpage
 
 @app.route('/chat', methods=['POST']) # Listens to incoming requests
 def chat(): # The function that recieves questions and sends answers from the chatbot
