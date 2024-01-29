@@ -1,5 +1,6 @@
 from collections import Counter
 from flask import Flask, request, jsonify, render_template
+from fastapi import FastAPI, HTTPException
 from flasgger import Swagger
 from langchain_openai import ChatOpenAI
 import os
@@ -135,7 +136,7 @@ def logic(question):
     
     return response_text, source
 
-app = Flask(__name__)
+app = FastAPI()
 swagger = Swagger(app) 
 
 @app.route("/")
@@ -256,12 +257,12 @@ def classify_downloaded_documents_route():
         return jsonify({'error': str(e)}), 500
 
 
-host = os.getenv('HOST', '0.0.0.0')  # Usa '0.0.0.0' si 'HOST' no está configurado
-port = int(os.getenv('PORT', 80))  # Usa el puerto 80 si 'PORT' no está configurado
+# host = os.getenv('HOST', '0.0.0.0')  # Usa '0.0.0.0' si 'HOST' no está configurado
+# port = int(os.getenv('PORT', 80))  # Usa el puerto 80 si 'PORT' no está configurado
 
-if __name__ == "__main__":
-    app.run(host=host, port=port, debug=False)
+# if __name__ == "__main__":
+#     app.run(host=host, port=port, debug=False)
 
-#    app.run(host=os.environ['HOST'], port=os.environ['PORT'], debug=True)  # Ejecutar la aplicación Flask
+# #    app.run(host=os.environ['HOST'], port=os.environ['PORT'], debug=True)  # Ejecutar la aplicación Flask
 
 

@@ -1,4 +1,5 @@
-gunicorn
+fastapi
+uvicorn
 Flask
 flasgger
 langchain 
