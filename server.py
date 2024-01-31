@@ -1,6 +1,4 @@
-from collections import Counter
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
 from langchain_openai import ChatOpenAI
 import os
 import pandas
@@ -8,11 +6,9 @@ import openai
 import numpy as np
 from dotenv import load_dotenv
 from langchain.chains.summarize import load_summarize_chain
-from langchain.chains import create_tagging_chain, create_tagging_chain_pydantic
 from langchain_core.prompts.prompt import PromptTemplate
 from loadDocuments import execute_drive_script
 from embeddingData import process_documents
-from langchain.chains.openai_functions.tagging import create_tagging_chain
 from langchain_core.prompts.prompt import PromptTemplate
 import fitz
 from classifyDocuments import classify_documents
