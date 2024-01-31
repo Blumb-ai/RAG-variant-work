@@ -1,7 +1,6 @@
 from collections import Counter
-from flask import Flask, request, jsonify, render_template
-from fastapi import FastAPI, HTTPException
-from flasgger import Swagger
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from langchain_openai import ChatOpenAI
 import os
 import pandas
@@ -137,28 +136,28 @@ def logic(question):
     return response_text, source
 
 app = FastAPI()
-swagger = Swagger(app) 
 
-@app.route("/")
-def home():
-    return render_template('bot.html') # Renders the webpage
-
-@app.route('/chat', methods=['POST']) # Listens to incoming requests
-def chat(): # The function that recieves questions and sends answers from the chatbot
+@app.post('/chat')
+#@app.route('/chat', methods=['POST']) # Listens to incoming requests
+def chat(request:Request): # The function that recieves questions and sends answers from the chatbot
 
     user_message = request.json['message'] # Receives the question
     pm = request.json['pm'] # Recieves the previous question that has been asked by the user (needed for follow up questions)
+
+    if not user_message:  # Asumiendo que quieres validar que 'message' exista
+        raise HTTPException(status_code=400, detail="No se proporcionó un mensaje")
 
     response = logic(user_message) # Creates a response from the ChatBot
     if ("sorry" in response.lower()) or ("provide more" in response.lower()) or ("not found" in response.lower()) or ("does not mention" in response.lower()) or ("does not reference" in response.lower()) or ("no information" in response.lower()) or ("not enough information" in response.lower()) or ("unable to provide" in response.lower()) or ("the guidelines do not" in response.lower()):
         response = logic(str(pm + ' ' + user_message)) # If the ChatBot isn't able to answer the question, it uses the previous question to make an answer in case it's a follow up question
 
     response = response.replace("<", "").replace(">", "") # Cleans the response
-    return jsonify({'message': response}) # Finally returns the response
+    #return jsonify({'message': response}) # Finally returns the response
+    return {'message': response}
 
-
-@app.route('/ask', methods=['POST'])
-def ask():
+@app.post('/ask')
+#@app.route('/ask', methods=['POST'])
+def ask(request: Request):
     """
     Send quetion to the api
     ---
@@ -186,15 +185,16 @@ def ask():
     question = data.get('question')
 
     if not question:
-        return jsonify({'error': 'No se proporcionó una pregunta'}), 400
+        raise HTTPException(status_code=400, detail="No se proporcionó una pregunta")
 
     # Llama a la función logic y obtiene la respuesta y la fuente
     response_text, source = logic(question)
 
     # Devuelve la respuesta y la fuente en formato JSON
-    return jsonify({'response': response_text, 'source': source})
+    return {'response': response_text, 'source': source}
 
-@app.route('/execute_drive_script', methods=['GET'])
+@app.get('/execute_drive_script')
+#@app.route('/execute_drive_script', methods=['GET'])
 def run_drive_script():
     """
     Obtain google drive docs
@@ -208,13 +208,15 @@ def run_drive_script():
         description: Server error
     """
     try:
-        source_documents = execute_drive_script()  # Ejecuta la función del script
-        return jsonify(source_documents)  # Devuelve la respuesta como JSON
+        source_documents = execute_drive_script()
+        return source_documents
     except Exception as e:
-        return jsonify({'error': str(e)}), 500 
+        raise HTTPException(status_code=500, detail=str(e))
+
     
 
-@app.route('/process_documents', methods=['GET'])
+@app.get('/process_documents')
+#@app.route('/process_documents', methods=['GET'])
 def run_pdf_processing():
     """
     Excecute embeddings process
@@ -228,13 +230,14 @@ def run_pdf_processing():
         description: Server error
     """
     try:
-        df_embeddings = process_documents()  # Ejecuta la función del script
-        return df_embeddings.to_json()  # Devuelve la respuesta como JSON
+        df_embeddings = process_documents()
+        return df_embeddings
     except Exception as e:
-        return jsonify({'error': str(e)}), 500  # En caso de error, devuelve el mensaje de error
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.route('/classify_documents', methods=['GET'])
+@app.get('/classify_documents')
+#@app.route('/classify_documents', methods=['GET'])
 def classify_downloaded_documents_route():
     """
     Clasify documents in categories: Risk Assessment, Contracts, Regulatory, Claims utilizando Langchain
@@ -248,13 +251,10 @@ def classify_downloaded_documents_route():
         description: Server error
     """
     try:
-        # Clasificar los documentos descargados
         classified_docs = classify_documents()
-
-        # Devolver los documentos clasificados
-        return jsonify(classified_docs)
+        return classified_docs
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # host = os.getenv('HOST', '0.0.0.0')  # Usa '0.0.0.0' si 'HOST' no está configurado
