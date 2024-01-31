@@ -17,6 +17,8 @@ from pydantic import BaseModel
 from typing import List
 
 
+
+
 class Question(BaseModel):
     question: str
 
@@ -206,5 +208,6 @@ def classify_downloaded_documents_route():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
