@@ -13,6 +13,24 @@ from langchain_core.prompts.prompt import PromptTemplate
 import fitz
 from classifyDocuments import classify_documents
 import openai
+from pydantic import BaseModel
+from typing import List
+
+
+class Question(BaseModel):
+    question: str
+
+class ResponseModel(BaseModel):
+    response: str
+    source: str
+
+class ErrorResponseModel(BaseModel):
+    detail: str
+
+class Document(BaseModel):
+    content: str
+
+
 
 load_dotenv()  
 
@@ -131,77 +149,23 @@ def logic(question):
     
     return response_text, source
 
-app = FastAPI()
+app = FastAPI(swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"})
 
-@app.post('/chat')
-#@app.route('/chat', methods=['POST']) # Listens to incoming requests
-def chat(request:Request): # The function that recieves questions and sends answers from the chatbot
-
-    user_message = request.json['message'] # Receives the question
-    pm = request.json['pm'] # Recieves the previous question that has been asked by the user (needed for follow up questions)
-
-    if not user_message:  # Asumiendo que quieres validar que 'message' exista
-        raise HTTPException(status_code=400, detail="No se proporcionó un mensaje")
-
-    response = logic(user_message) # Creates a response from the ChatBot
-    if ("sorry" in response.lower()) or ("provide more" in response.lower()) or ("not found" in response.lower()) or ("does not mention" in response.lower()) or ("does not reference" in response.lower()) or ("no information" in response.lower()) or ("not enough information" in response.lower()) or ("unable to provide" in response.lower()) or ("the guidelines do not" in response.lower()):
-        response = logic(str(pm + ' ' + user_message)) # If the ChatBot isn't able to answer the question, it uses the previous question to make an answer in case it's a follow up question
-
-    response = response.replace("<", "").replace(">", "") # Cleans the response
-    #return jsonify({'message': response}) # Finally returns the response
-    return {'message': response}
-
-@app.post('/ask')
-#@app.route('/ask', methods=['POST'])
-def ask(request: Request):
-    """
-    Send quetion to the api
-    ---
-    tags:
-      - Questions
-    parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          id: Question
-          required:
-            - question
-          properties:
-            question:
-              type: string
-              description: A question to the api.
-    responses:
-      201:
-        description: Answer received OK
-      500:
-        description: Server error
-    """
-    data = request.json
-    question = data.get('question')
+@app.post('/ask', response_model=ResponseModel, responses={400: {"model": ErrorResponseModel}, 500: {"model": ErrorResponseModel}}, description="Recibe una pregunta y devuelve una respuesta y su fuente.")
+async def ask(question_data: Question):
+    question = question_data.question
 
     if not question:
         raise HTTPException(status_code=400, detail="No se proporcionó una pregunta")
 
-    # Llama a la función logic y obtiene la respuesta y la fuente
     response_text, source = logic(question)
-
-    # Devuelve la respuesta y la fuente en formato JSON
     return {'response': response_text, 'source': source}
 
-@app.get('/execute_drive_script')
-#@app.route('/execute_drive_script', methods=['GET'])
+
+@app.get('/execute_drive_script', response_model=List[Document], responses={500: {"model": ErrorResponseModel}}, description="Obtiene documentos de Google Drive.")
 def run_drive_script():
     """
-    Obtain google drive docs
-    ---
-    tags:
-      - Documentation
-    responses:
-      201:
-        description: Process completed
-      500:
-        description: Server error
+    Obtain Google Drive docs.
     """
     try:
         source_documents = execute_drive_script()
@@ -211,8 +175,7 @@ def run_drive_script():
 
     
 
-@app.get('/process_documents')
-#@app.route('/process_documents', methods=['GET'])
+@app.get('/process_documents', response_model=List[Document], responses={500: {"model": ErrorResponseModel}})
 def run_pdf_processing():
     """
     Excecute embeddings process
@@ -232,19 +195,10 @@ def run_pdf_processing():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get('/classify_documents')
-#@app.route('/classify_documents', methods=['GET'])
+@app.get('/classify_documents', response_model=List[Document], responses={500: {"model": ErrorResponseModel}})
 def classify_downloaded_documents_route():
     """
     Clasify documents in categories: Risk Assessment, Contracts, Regulatory, Claims utilizando Langchain
-    ---
-    tags:
-      - Classification Langchain
-    responses:
-      200:
-        description: Downloaded documents clasification.
-      500:
-        description: Server error
     """
     try:
         classified_docs = classify_documents()
@@ -252,13 +206,5 @@ def classify_downloaded_documents_route():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# host = os.getenv('HOST', '0.0.0.0')  # Usa '0.0.0.0' si 'HOST' no está configurado
-# port = int(os.getenv('PORT', 80))  # Usa el puerto 80 si 'PORT' no está configurado
-
-# if __name__ == "__main__":
-#     app.run(host=host, port=port, debug=False)
-
-# #    app.run(host=os.environ['HOST'], port=os.environ['PORT'], debug=True)  # Ejecutar la aplicación Flask
 
 
