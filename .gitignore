@@ -1,0 +1,7 @@
+# compiled output
+/__pycache__
+/.do
+/.github
+
+# APP
+.env
