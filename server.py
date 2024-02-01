@@ -13,11 +13,8 @@ from langchain_core.prompts.prompt import PromptTemplate
 import fitz
 from classifyDocuments import classify_documents
 import openai
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from typing import List
-
-
-
 
 class Question(BaseModel):
     question: str
@@ -29,8 +26,20 @@ class ResponseModel(BaseModel):
 class ErrorResponseModel(BaseModel):
     detail: str
 
-class Document(BaseModel):
-    content: str
+class DocumentClassified(BaseModel):
+    title: str
+    tag: str
+    source: str
+
+class SimpleResponse(BaseModel):
+    message: str
+
+class FileNameandURL(BaseModel):
+    filename: str
+    webViewLink: HttpUrl
+
+class FileNameList(BaseModel):
+    documents: List[FileNameandURL]
 
 
 
@@ -164,20 +173,21 @@ async def ask(question_data: Question):
     return {'response': response_text, 'source': source}
 
 
-@app.get('/execute_drive_script', response_model=List[Document], responses={500: {"model": ErrorResponseModel}}, description="Obtiene documentos de Google Drive.")
+@app.get('/execute_drive_script', response_model=FileNameList, responses={500: {"model": ErrorResponseModel}}, description="Obtiene documentos de Google Drive.")
 def run_drive_script():
     """
     Obtain Google Drive docs.
     """
     try:
         source_documents = execute_drive_script()
-        return source_documents
+        documents = [FileNameandURL(filename=name, webViewLink=link) for name, link in source_documents.items()]
+        return FileNameList(documents=documents)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
     
 
-@app.get('/process_documents', response_model=List[Document], responses={500: {"model": ErrorResponseModel}})
+@app.get('/process_documents', response_model=SimpleResponse, responses={500: {"model": ErrorResponseModel}})
 def run_pdf_processing():
     """
     Excecute embeddings process
@@ -191,20 +201,20 @@ def run_pdf_processing():
         description: Server error
     """
     try:
-        df_embeddings = process_documents()
-        return df_embeddings
+        message = process_documents()
+        return SimpleResponse(message=message)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get('/classify_documents', response_model=List[Document], responses={500: {"model": ErrorResponseModel}})
+@app.get('/classify_documents', response_model=List[DocumentClassified], responses={500: {"model": ErrorResponseModel}})
 def classify_downloaded_documents_route():
     """
     Clasify documents in categories: Risk Assessment, Contracts, Regulatory, Claims utilizando Langchain
     """
     try:
         classified_docs = classify_documents()
-        return classified_docs
+        return [DocumentClassified(title=doc['title'], tag=doc['tag'], source=doc['source']) for doc in classified_docs]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
